@@ -1,4 +1,8 @@
 'use strict';
+// Reassert the document title when a browser restores a cached page.
+const pageTitle=document.head.querySelector('title').textContent;
+document.title=pageTitle;
+window.addEventListener('pageshow',()=>{document.title=pageTitle;});
 const names={weave:'Canonical Weave',highways:'Highways',conveyor:'Conveyor',basic:'SMD Basic',dense:'SMD Dense',shelf:'SMD Shelf',room:'SMD Room',scaledweave:'ScaledWeave'};
 const $=s=>document.querySelector(s);
 const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
