@@ -36,8 +36,10 @@ const tasks={
     "description": "Robots exchange positions between opposite sides of an open square, creating intersecting horizontal and vertical flows. The geometry expands with population to keep start and goal configurations separated, while robot size remains fixed."
   }
 };
+const posterCache=new Map();
 let media=[],results=null,environment='weave',resultsEnvironment='weave';
-const population=$('#population'),video=$('#gallery-video'),resultPopulation=$('#results-population');
+const population=$('#population'),resultPopulation=$('#results-population');
+let video=$('#gallery-video');
 function buttons(container,selected,callback){
  container.replaceChildren(...Object.entries(names).map(([key,name])=>{const b=document.createElement('button');b.type='button';b.dataset.env=key;b.textContent=name;b.setAttribute('aria-pressed',String(key===selected));b.addEventListener('click',()=>callback(key));return b;}));
 }
@@ -45,22 +47,35 @@ function updatePressed(container,env){container.querySelectorAll('button').forEa
 function selectEnvironment(key,n){
  environment=key;updatePressed($('#environment-tabs'),key);
  const values=media.filter(r=>r.environment===key).map(r=>r.population).sort((a,b)=>a-b);
- population.replaceChildren(...values.map(n=>new Option(`N=${n} · ${n} robots`,n)));
+ population.replaceChildren(...values.map(n=>new Option(`${n} robots`,n)));
  population.value=String(values.includes(Number(n))?n:values.at(-1));selectVideo();
 }
 function selectVideo(){
  const r=media.find(r=>r.environment===environment&&r.population===Number(population.value));if(!r)return;
- video.pause();video.poster=r.poster;video.width=r.width;video.height=r.height;video.style.aspectRatio=`${r.width} / ${r.height}`;video.src=r.video;video.load();
+ // A fresh media element prevents stale playback/control state after source changes.
+ video.pause();video.removeAttribute('src');
+ const next=document.createElement('video');next.id='gallery-video';next.muted=true;next.defaultMuted=true;next.loop=true;next.playsInline=true;next.preload='none';next.poster=r.poster;next.width=r.width;next.height=r.height;next.style.aspectRatio=`${r.width} / ${r.height}`;next.src=r.video;
+ const start=document.createElement('button');start.type='button';start.className='comparison-start';start.setAttribute('aria-label',`Play ${names[environment]} comparison with ${r.population} robots`);
+ const poster=document.createElement('img');poster.src=r.poster;poster.alt=`${names[environment]}, ${r.population} robots: ${r.methods.join(', ')} comparison preview`;poster.width=r.width;poster.height=r.height;poster.decoding='async';
+ const badge=document.createElement('span');badge.className='comparison-play';badge.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 4L21 12L8 20Z" fill="currentColor"/></svg><span>Play comparison</span>';
+ start.append(poster,badge);
+ const status=document.createElement('span');status.className='comparison-status';status.setAttribute('role','status');
+ const frame=$('#comparison-frame');frame.style.aspectRatio=`${r.width} / ${r.height}`;frame.replaceChildren(next,start,status);video=next;
+ function retry(){if(video!==next)return;next.pause();next.controls=false;start.hidden=false;start.disabled=false;badge.querySelector('span').textContent='Play comparison';status.textContent='Could not start playback. Try again or open the full-resolution clip.';}
+ start.addEventListener('click',()=>{if(video!==next)return;start.disabled=true;status.textContent='';badge.querySelector('span').textContent='Loading comparison…';next.play().catch(retry);});
+ next.addEventListener('playing',()=>{if(video!==next)return;start.hidden=true;next.controls=true;status.textContent='';});
+ next.addEventListener('error',retry);
+ // Cache only the small posters for the active environment; videos remain on demand.
+ for(const item of media.filter(item=>item.environment===environment)){if(!posterCache.has(item.poster)){const img=new Image();img.src=item.poster;posterCache.set(item.poster,img);}}
  $('#gallery-title').textContent=`Performance on ${names[environment]}, N=${r.population}`;
- $('#gallery-style').textContent='Complete 2D comparison';
  $('#task-title').textContent=tasks[environment].title;$('#gallery-description').textContent=tasks[environment].description;
  $('#task-population').textContent=`${r.population} robots · one assigned goal per robot`;
- $('#gallery-caption').textContent=r.caption;$('#video-link').href=r.video;
+ $('#gallery-caption').textContent=r.methods.join(' · ');$('#video-link').href=r.video;
  video.setAttribute('aria-label',r.caption);
 }
 function selectResults(key,n='all'){
  resultsEnvironment=key;updatePressed($('#results-tabs'),key);
- const b=results.benchmarks[key];resultPopulation.replaceChildren(new Option('All populations','all'),...b.populations.map(n=>new Option(`N=${n}`,n)));
+ const b=results.benchmarks[key];resultPopulation.replaceChildren(new Option('All populations','all'),...b.populations.map(n=>new Option(`${n} robots`,n)));
  resultPopulation.value=b.populations.includes(Number(n))?String(n):'all';renderResults();
 }
 function cell(tag,text,scope){const x=document.createElement(tag);x.textContent=text??'—';if(scope)x.scope=scope;return x;}
@@ -87,7 +102,7 @@ $('#figure-close').addEventListener('click',()=>dialog.close());dialog.addEventL
 $('#copy-citation').addEventListener('click',async()=>{try{await navigator.clipboard.writeText($('#bibtex').textContent);$('#copy-status').textContent='Citation copied.';}catch{const range=document.createRange();range.selectNodeContents($('#bibtex'));const s=window.getSelection();s.removeAllRanges();s.addRange(range);$('#copy-status').textContent='Citation selected. Use your browser’s copy command.';}});
 const hero=$('#hero-video');let heroVisible=false;
 new IntersectionObserver(entries=>{heroVisible=entries[0].isIntersecting;if(heroVisible&&!reduced.matches&&!navigator.connection?.saveData)hero.play().catch(()=>{});else hero.pause();},{threshold:.25}).observe(hero);
-new IntersectionObserver(entries=>{if(!entries[0].isIntersecting)video.pause();},{threshold:.1}).observe(video);
+new IntersectionObserver(entries=>{if(!entries[0].isIntersecting)video.pause();},{threshold:.1}).observe($('.gallery-player'));
 // Both schematics share playback controls. The composer draws an exact vector sum.
 const ns='http://www.w3.org/2000/svg',vectors=[[65,-20],[-25,-45],[-15,45]],colors=['#5888e0','#91abd8','#61769b','#1850a0'];
 const svg=$('#composer-svg');
