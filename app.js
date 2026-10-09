@@ -3,14 +3,38 @@ const names={weave:'Canonical Weave',highways:'Highways',conveyor:'Conveyor',bas
 const $=s=>document.querySelector(s);
 const reduced=window.matchMedia('(prefers-reduced-motion: reduce)');
 const tasks={
- weave:{title:'Exchange positions through shared space',description:'Move every robot from its start to its assigned goal across an open workspace. Crossing routes create conflicts even when each individual path is obstacle-free.'},
- highways:{title:'Share the passages around fixed obstacles',description:'Navigate to assigned goals through the free-space corridors around fixed obstacles. Robots must coordinate where their routes meet and share limited passing room.'},
- conveyor:{title:'Coordinate through narrow lanes',description:'Reach assigned goals around long, parallel obstacles. The layout creates narrow lanes and detours, bringing robots together at shared passages.'},
- basic:{title:'Navigate around scattered obstacles',description:'Move the team to assigned goals through a map of circular obstacles. Each robot must avoid the fixed geometry while coordinating with other moving robots.'},
- dense:{title:'Find room to pass in a crowded map',description:'Reach assigned goals in a denser field of circular obstacles. Less open space makes both obstacle avoidance and robot-to-robot coordination more demanding.'},
- shelf:{title:'Move through a shelf-like layout',description:'Navigate between repeated obstacle structures to reach assigned goals. Robots share constrained routes around the shelves and must coordinate when those routes overlap.'},
- room:{title:'Connect starts and goals across a divided space',description:'Reach assigned goals around room-like obstacle arrangements. The team must navigate the available openings while avoiding obstacles and one another.'},
- scaledweave:{title:'Scale the position-exchange task',description:'Move a larger team between assigned start and goal configurations. The workspace grows with population to preserve feasible endpoints, while crossing routes still require coordination.'}
+  "weave": {
+    "title": "Exchange positions across an open square",
+    "description": "Robots start near the four sides of an obstacle-free square and move to assigned goals on the opposite side. Horizontal and vertical flows cross in the shared interior, requiring collision-free coordination."
+  },
+  "highways": {
+    "title": "Move anticlockwise around the central obstacle",
+    "description": "Reach assigned goals while following an anticlockwise motion pattern around the central obstacle. Robots must avoid the fixed obstacles and one another as they merge into and share the surrounding passages."
+  },
+  "conveyor": {
+    "title": "Traverse a corridor in its prescribed direction",
+    "description": "Each robot must traverse either the upper corridor from right to left or the lower corridor from left to right before reaching its assigned goal. Narrow entrances and shared passages require coordinated obstacle and robot avoidance."
+  },
+  "basic": {
+    "title": "Reach assigned goals among scattered obstacles",
+    "description": "Navigate from individual starts to assigned goals in a workspace with 10 scattered circular obstacles. Trajectories must avoid both the static obstacles and other robots."
+  },
+  "dense": {
+    "title": "Coordinate through a dense obstacle field",
+    "description": "Reach assigned goals among 20 circular obstacles. The denser layout restricts free space and passing opportunities, so robots must coordinate their routes while avoiding obstacles and one another."
+  },
+  "shelf": {
+    "title": "Navigate the aisles around shelf-like structures",
+    "description": "Move from individual starts to assigned goals through a repeated shelf-like obstacle layout. Robots must share the aisles and route around shelf ends without colliding with the structures or one another."
+  },
+  "room": {
+    "title": "Pass through openings between room-like regions",
+    "description": "Reach assigned goals in a workspace divided by wall-like obstacle structures. Robots must use the connecting openings and coordinate through these bottlenecks while avoiding obstacles and one another."
+  },
+  "scaledweave": {
+    "title": "Exchange positions with a larger robot team",
+    "description": "Robots exchange positions between opposite sides of an open square, creating intersecting horizontal and vertical flows. The geometry expands with population to keep start and goal configurations separated, while robot size remains fixed."
+  }
 };
 let media=[],results=null,environment='weave',resultsEnvironment='weave';
 const population=$('#population'),video=$('#gallery-video'),resultPopulation=$('#results-population');
@@ -72,9 +96,30 @@ function makeVectors(group,x){return [0,1,2,3].map(i=>{const line=document.creat
 const naive=makeVectors($('#naive-vectors'),80),weighted=makeVectors($('#weighted-vectors'),290);
 function draw(lines,x,coeff){let sx=0,sy=0;vectors.forEach(([dx,dy],i)=>{const vx=dx*coeff[i],vy=dy*coeff[i];lines[i].setAttribute('x2',x+vx);lines[i].setAttribute('y2',135+vy);sx+=vx;sy+=vy;});lines[3].setAttribute('x2',x+sx);lines[3].setAttribute('y2',135+sy);}
 draw(naive,80,[1,1,1]);
-function compose(t){const a=[1+.3*t,1-.75*t,1-1.7*t];draw(weighted,290,a);$('#g-coefficients').querySelectorAll('span').forEach((s,i)=>{s.style.borderBottom=`2px solid ${colors[i]}`;s.textContent=`R${['₁','₂','₃'][i]} · α${['₁','₂','₃'][i]} = ${a[i]<0?'−':'+'}${Math.abs(a[i]).toFixed(2)}`;});svg.dataset.phase=t.toFixed(3);}
+function compose(t){const a=[1+.3*t,1-.75*t,1-1.7*t];draw(weighted,290,a);$('#g-stage').textContent=t<.05?'Uniform contributions':t<.95?'Applying contextual weights':'Amplify · attenuate · reverse';$('#g-coefficients').querySelectorAll('span').forEach((s,i)=>{s.style.borderBottom=`2px solid ${colors[i]}`;s.textContent=`R${['₁','₂','₃'][i]} · α${['₁','₂','₃'][i]} = ${a[i]<0?'−':'+'}${Math.abs(a[i]).toFixed(2)}`;});svg.dataset.phase=t.toFixed(3);}
+// Schematic robot states and directed supports; no benchmark trajectories are used.
+const uSVG=$('#selector-svg'),uCandidates=$('#u-candidates'),uSupport=$('#u-support'),uRobots=$('#u-robots');
+const uBase=[[45,99],[137,48],[278,46],[374,99],[279,149],[137,151]];
+const uStates=[[[0,1],[1,2],[3,4],[4,5],[5,0]],[[0,5],[1,5],[2,3],[3,4],[5,4]],[[0,1],[1,5],[2,1],[3,2],[4,3]]];
+function uEl(tag,attrs,parent){const e=document.createElementNS(ns,tag);for(const [k,v] of Object.entries(attrs))e.setAttribute(k,v);parent.append(e);return e;}
+const candidates=[];
+for(let i=0;i<6;i++)for(let j=i+1;j<6;j++)candidates.push([i,j,uEl('line',{},uCandidates)]);
+const supports=[];
+for(let i=0;i<6;i++)for(let j=0;j<6;j++)if(i!==j){const line=uEl('line',{'marker-end':'url(#selector-arrow)'},uSupport);const dot=uEl('circle',{r:2.5,fill:'#1850a0'},uSupport);supports.push({i,j,line,dot});}
+const robots=uBase.map((_,i)=>{const halo=uEl('circle',{r:17,class:'robot-halo'},uRobots);const disk=uEl('circle',{r:9,class:'robot-disk'},uRobots);const label=uEl('text',{'text-anchor':'middle',class:'robot-label'},uRobots);label.textContent=String(i+1);return {halo,disk,label};});
+function selectGraph(seconds){
+ const cycle=seconds%12,epoch=Math.floor(seconds/12)%3,selected=uStates[epoch],fade=cycle<1.5?cycle/1.5:cycle>10.5?(12-cycle)/1.5:1;
+ const points=uBase.map(([x,y],i)=>[x+Math.sin(seconds*.35+i)*5,y+Math.cos(seconds*.3+i*.8)*5]);
+ for(const [i,j,l] of candidates){l.setAttribute('x1',points[i][0]);l.setAttribute('y1',points[i][1]);l.setAttribute('x2',points[j][0]);l.setAttribute('y2',points[j][1]);}
+ supports.forEach(({i,j,line,dot})=>{const enabled=selected.some(([a,b])=>a===i&&b===j),[x,y]=points[i],[xx,yy]=points[j],d=Math.hypot(xx-x,yy-y),dx=(xx-x)/d,dy=(yy-y)/d;
+  line.setAttribute('x1',x+dx*13);line.setAttribute('y1',y+dy*13);line.setAttribute('x2',xx-dx*15);line.setAttribute('y2',yy-dy*15);line.style.opacity=enabled?fade:0;
+  const flow=(seconds*.45+i*.17)%1;dot.setAttribute('cx',x+dx*13+(xx-x-dx*28)*flow);dot.setAttribute('cy',y+dy*13+(yy-y-dy*28)*flow);dot.style.opacity=enabled&&cycle>3&&cycle<10?fade:0;
+ });
+ robots.forEach(({halo,disk,label},i)=>{const [x,y]=points[i];for(const e of [halo,disk]){e.setAttribute('cx',x);e.setAttribute('cy',y);}halo.style.opacity=selected.some(([a])=>a===i)?(.18+.12*Math.sin(seconds*1.2+i)**2)*fade:0;label.setAttribute('x',x);label.setAttribute('y',y+3.5);});
+ $('#u-stage').textContent=cycle<1.5?'Score candidate pairs':cycle<3?'Select directed interactions':'Evaluate R on selected pairs';uSVG.dataset.support=String(epoch);uSVG.dataset.phase=cycle.toFixed(3);
+}
 let paused=reduced.matches,visible=false,frame=null,start=null;
-function tick(now){if(paused||!visible||document.hidden){frame=null;return;}if(start===null)start=now;const phase=((now-start)%10000)/1000;const v=phase<2?0:phase<4?(phase-2)/2:phase<8?1:1-(phase-8)/2;compose(v*v*(3-2*v));frame=requestAnimationFrame(tick);}
-function motion(){document.body.classList.toggle('schematics-paused',paused||!visible||document.hidden);$('#motion-toggle').textContent=paused?'Play schematics':'Pause schematics';$('#motion-toggle').setAttribute('aria-pressed',String(paused));if(paused){compose(1);if(frame)cancelAnimationFrame(frame);frame=null;}else if(visible&&!frame&&!document.hidden)frame=requestAnimationFrame(tick);}
+function tick(now){if(paused||!visible||document.hidden){frame=null;return;}if(start===null)start=now;const phase=((now-start)%10000)/1000;const v=phase<2?0:phase<4?(phase-2)/2:phase<8?1:1-(phase-8)/2;compose(v*v*(3-2*v));selectGraph((now-start)/1000);frame=requestAnimationFrame(tick);}
+function motion(){document.body.classList.toggle('schematics-paused',paused||!visible||document.hidden);$('#motion-toggle').textContent=paused?'Play schematics':'Pause schematics';$('#motion-toggle').setAttribute('aria-pressed',String(paused));if(paused){compose(1);selectGraph(6);if(frame)cancelAnimationFrame(frame);frame=null;}else if(visible&&!frame&&!document.hidden)frame=requestAnimationFrame(tick);}
 $('#motion-toggle').addEventListener('click',()=>{paused=!paused;start=null;motion();});new IntersectionObserver(entries=>{visible=entries[0].isIntersecting;motion();},{threshold:.1}).observe($('.decisions'));
-reduced.addEventListener('change',e=>{paused=e.matches;hero.pause();motion();});document.addEventListener('visibilitychange',()=>{if(document.hidden){hero.pause();video.pause();}motion();});compose(1);motion();
+reduced.addEventListener('change',e=>{paused=e.matches;hero.pause();motion();});document.addEventListener('visibilitychange',()=>{if(document.hidden){hero.pause();video.pause();}motion();});compose(1);selectGraph(6);motion();
