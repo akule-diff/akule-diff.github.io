@@ -1,15 +1,12 @@
 # Akule project website
 
-Static project website for **Akule: Fast and Scalable Multi-Robot Motion Planning via Sparse Interaction Diffusion**.
+Static research companion for **Akule: Fast and Scalable Multi-Robot Motion Planning via Sparse Interaction Diffusion**.
 
-Serve this directory with any static HTTP server. No build step, package installation, external font, or client framework is required.
+Serve locally with `python -m http.server 8000`. GitHub Pages publishes `main` from `/`; no build tool or external font is required.
 
-```bash
-python -m http.server 8000
-```
+- `assets/media-manifest.json`: 44 complete 2D comparison panels across eight environments. Each entry records population, original panel filename, displayed methods, caption, dimensions, frame rate, and video/poster paths. The original H.264 video streams are preserved, with no cropping, resizing, or temporal changes.
+- `assets/benchmark-results.json`: 180 rows transcribed from the final paper tables, with original decimal precision, table filename, line number, and source hash. Select a population or inspect the full table. Cross-paper timing qualifications remain with the relevant tables.
+- `assets/figure-manifest.json`: final paper figure sources and hashes. Figures open in a keyboard-accessible preview; Escape closes it.
+- `app.js`: independent gallery/results filters with links that transfer the selected population, plus lightweight U/G schematics. Only the selected gallery video is loaded. Reduced-motion preferences pause the schematics and disable automatic hero playback.
 
-GitHub Pages: publish `main` from `/` in Settings → Pages. `.nojekyll` preserves the static assets. The site is intended for `https://akule-diff.github.io/`.
-
-The responsive gallery loads one selected recording at a time. H.264 MP4 videos include posters, inline controls, and no identifying metadata. Reduced-motion preferences disable automatic hero playback. `assets/media-manifest.json` records environment, population, method, source recording, and published asset names.
-
-Research content and figures accompany the anonymous AAMAS submission. Code: https://github.com/akule-diff/Akule.
+The website preserves anonymous review. Paper and supplement links can be added once approved anonymous public PDFs are available.

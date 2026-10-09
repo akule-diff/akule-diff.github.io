@@ -1,0 +1,32 @@
+[
+  {
+    "file": "assets/figures/architecture.png",
+    "source": "figures/akule_architecture.pdf",
+    "source_sha256": "25bfdb59385fff30a9b238fa955b7e089b9a9724201629744e25fe1086fcdb12"
+  },
+  {
+    "file": "assets/figures/selector.png",
+    "source": "figures/akule_selector.pdf",
+    "source_sha256": "ca8e47bc6eeb634509059b47c1985e2f5a13ba4ba21490fc88abdbd7f5daa1cf"
+  },
+  {
+    "file": "assets/figures/composer.png",
+    "source": "figures/akule_composer.pdf",
+    "source_sha256": "f671c2deb557d1cf4fd8a332dd9d5023cfd0893d3cbdb9ff78e1b0176c0f907d"
+  },
+  {
+    "file": "assets/figures/sparsity.png",
+    "source": "figures/kf/kf1_sparsity.pdf",
+    "source_sha256": "f34b28b71ddf7a52b6b79c5ad8a43fce078f8b37f044d73232ce4117801c741d"
+  },
+  {
+    "file": "assets/figures/transfer-collisions.png",
+    "source": "figures/kf/kf23_transfer_collisions.pdf",
+    "source_sha256": "e61c5758ced7d8ebc7f0036e35740c1844f0822c756e489bc7f9443dda983530"
+  },
+  {
+    "file": "assets/figures/scaling.png",
+    "source": "figures/kf/kf4_scaling.pdf",
+    "source_sha256": "8fbca955d18907f58780d80a01fd495b3f12ddc5ecc37300a12c30912acd7990"
+  }
+]
